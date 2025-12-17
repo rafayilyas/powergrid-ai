@@ -9,9 +9,7 @@ from app.utils import load_models
 
 app = FastAPI(title="Electricity Demand Prediction")
 
-# -----------------------------
-# LAZY MODEL LOADING (CRITICAL)
-# -----------------------------
+
 _models = None
 
 def get_models():
