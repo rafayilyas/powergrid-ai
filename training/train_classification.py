@@ -23,8 +23,6 @@ def train_classification(processed_path: str = 'data/processed/processed.csv', m
     df = pd.read_csv(processed_path)
     
     # 3. Feature Engineering (Critical Step)
-    # The processed.csv only has 'datetime', 'demand', 'temperature', 'voltage'.
-    # We must re-create 'hour' and 'dayofweek' from the 'datetime' column.
     df['datetime'] = pd.to_datetime(df['datetime'])
     df['hour'] = df['datetime'].dt.hour
     df['dayofweek'] = df['datetime'].dt.dayofweek
@@ -42,10 +40,20 @@ def train_classification(processed_path: str = 'data/processed/processed.csv', m
     X = df[features]
     y = df['high_risk']
 
-    # 5. Train Model
+    # 5. Train Model (LITE VERSION)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    print("Training Lite Classifier Model...")
+    # OPTIMIZATION: Reduced size for Free Tier hosting
+    # n_estimators=20 (was 100)
+    # max_depth=10 (was None)
+    clf = RandomForestClassifier(
+        n_estimators=20, 
+        max_depth=10, 
+        n_jobs=-1, 
+        random_state=42
+    )
+    
     clf.fit(X_train, y_train)
 
     # 6. Evaluate and Save
@@ -53,7 +61,11 @@ def train_classification(processed_path: str = 'data/processed/processed.csv', m
     acc = accuracy_score(y_test, preds)
 
     Path('models').mkdir(parents=True, exist_ok=True)
-    joblib.dump(clf, model_path)
+    
+    # 'compress=3' helps reduce the file size further
+    joblib.dump(clf, model_path, compress=3)
+    
+    print(f"Model saved to {model_path}")
 
     return {
         'accuracy': float(acc), 

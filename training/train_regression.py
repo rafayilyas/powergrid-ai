@@ -23,7 +23,7 @@ def train_regression(processed_path: str = 'data/processed/processed.csv', model
     # 2. Load Data
     df = pd.read_csv(processed_path)
     
-    # 3. Feature Engineering (The Fix)
+    # 3. Feature Engineering
     # We must regenerate 'hour' and 'dayofweek' from the datetime column
     df['datetime'] = pd.to_datetime(df['datetime'])
     df['hour'] = df['datetime'].dt.hour
@@ -38,11 +38,21 @@ def train_regression(processed_path: str = 'data/processed/processed.csv', model
     X = df[features]
     y = df['demand']
 
-    # 5. Train Model
+    # 5. Train Model (LITE VERSION)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    print("Fitting Random Forest Regressor...")
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    print("Fitting Lite Random Forest Regressor...")
+    # OPTIMIZATION: Reduced size for Free Tier hosting
+    # n_estimators=20 (was 100): Creates fewer trees
+    # max_depth=10 (was None): Limits how complex each tree can get
+    # n_jobs=-1: Uses all CPU cores for faster training
+    model = RandomForestRegressor(
+        n_estimators=20, 
+        max_depth=10, 
+        n_jobs=-1, 
+        random_state=42
+    )
+    
     model.fit(X_train, y_train)
 
     # 6. Evaluate and Save
@@ -50,8 +60,11 @@ def train_regression(processed_path: str = 'data/processed/processed.csv', model
     rmse = float(np.sqrt(mean_squared_error(y_test, preds)))
 
     Path('models').mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, model_path)
     
+    # 'compress=3' helps reduce the file size further
+    joblib.dump(model, model_path, compress=3)
+    
+    print(f"Model saved to {model_path}")
     return {'rmse': float(rmse), 'model_path': model_path}
 
 if __name__ == '__main__':

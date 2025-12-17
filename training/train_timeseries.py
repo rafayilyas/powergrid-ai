@@ -41,18 +41,17 @@ def train_timeseries(processed_path: str = 'data/processed/processed.csv', model
     # 'asfreq' ensures we have a strict hourly frequency, filling gaps if necessary
     ts = df['demand'].asfreq('h')
     
-    # Fill missing values (forward fill is standard for time series)
-    # Note: .fillna(method='ffill') is deprecated, using .ffill() instead
+    # Fill missing values
     ts = ts.ffill()
 
-    # OPTIONAL: Limit training data size
-    # SARIMAX is very slow on large datasets (30k+ points). 
-    # We take the last 10,000 hours (over a year) which is plenty for a pattern.
-    if len(ts) > 10000:
-        print(f"Dataset is large ({len(ts)} hours). Training on the last 10,000 hours to save time...")
-        ts = ts.iloc[-10000:]
+    # OPTIMIZATION: Limit training data size for Free Tier
+    # Reduced from 10,000 to 2,000 (approx 3 months).
+    # This keeps memory usage low while still capturing the daily seasonality.
+    if len(ts) > 2000:
+        print(f"Dataset is large ({len(ts)} hours). Training on the last 2,000 hours to save memory...")
+        ts = ts.iloc[-2000:]
 
-    print("Fitting SARIMAX model (this might take a minute)...")
+    print("Fitting Lite SARIMAX model (this might take a minute)...")
     
     # 4. Define and Fit Model
     # order=(p,d,q): (1,0,1) is a standard baseline
@@ -67,9 +66,11 @@ def train_timeseries(processed_path: str = 'data/processed/processed.csv', model
     
     # 5. Save Model
     Path('models').mkdir(parents=True, exist_ok=True)
-    joblib.dump(res, model_path)
     
-    print("Time Series model saved.")
+    # 'compress=3' to reduce file size
+    joblib.dump(res, model_path, compress=3)
+    
+    print(f"Lite Time Series model saved to {model_path}")
     return {'aic': float(res.aic), 'model_path': model_path}
 
 
