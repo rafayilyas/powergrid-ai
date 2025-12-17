@@ -22,19 +22,35 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER: LOAD MODELS (Unified Architecture) ---
+# --- HELPER: LOAD MODELS (ROBUST PATH FIX) ---
 @st.cache_resource
 def load_models():
-    # Paths to your models
-    reg_path = Path("models/regression.pkl")
-    clf_path = Path("models/classifier.pkl")
+    # 1. Get the directory where THIS file (app.py) is located
+    current_file_dir = Path(__file__).resolve().parent
+    
+    # 2. Go up one level to the Project Root (e.g., 'ML_Project')
+    project_root = current_file_dir.parent
+    
+    # 3. Construct the absolute paths to the models
+    reg_path = project_root / "models" / "regression.pkl"
+    clf_path = project_root / "models" / "classifier.pkl"
     
     loaded_models = {}
     
+    # Debugging: This will print to your terminal (console) so you can see where it's looking
+    print(f"DEBUG: Searching for models in: {project_root / 'models'}")
+    
     if reg_path.exists():
         loaded_models['regression'] = joblib.load(reg_path)
+        print("DEBUG: Regression model loaded ✅")
+    else:
+        print(f"ERROR: Regression model NOT found at {reg_path} ❌")
+
     if clf_path.exists():
         loaded_models['classifier'] = joblib.load(clf_path)
+        print("DEBUG: Classifier model loaded ✅")
+    else:
+        print(f"ERROR: Classifier model NOT found at {clf_path} ❌")
         
     return loaded_models
 
