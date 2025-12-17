@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import List
 import pandas as pd
 from io import StringIO
+# Assuming you have these files in an 'app' folder:
 from app.schemas import DemandRequest, PeakRequest
 from app.utils import load_models
 
@@ -30,17 +31,17 @@ def peak_hour(req: PeakRequest):
     
     X = [[req.hour, req.temperature, req.voltage, req.dayofweek]]
     
-    # Prediction is 0, 1, or 2
+    # Prediction is 0 or 1 (Binary, as per your training script)
     y = clf.predict(X)[0]
     
-    # Map to strings
+    # Corrected labels to match training (0=Normal, 1=High Risk)
     labels = {
-        0: "Low Risk",
-        1: "Moderate Risk",
-        2: "High Load Shedding Risk"
+        0: "Normal / Low Risk",
+        1: "High Load Shedding Risk"
     }
     
-    return {"risk": labels.get(y, "Unknown")}
+    # int(y) ensures numpy types don't break the dictionary lookup
+    return {"risk": labels.get(int(y), "Unknown")}
 
 @app.post("/upload-data")
 async def upload_data(file: UploadFile = File(...)):
@@ -74,7 +75,6 @@ async def upload_data(file: UploadFile = File(...)):
             )
 
         # 5. Select ONLY the features the model expects (in correct order)
-        # This prevents errors if the CSV has extra columns like 'id' or 'date'
         X = df[required_cols]
         
         # 6. Predict
